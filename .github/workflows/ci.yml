@@ -16,10 +16,10 @@ jobs:
         os: [ubuntu-latest, windows-latest]
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v6
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v10
         with:
-          python-version: "3.12"
+          python-version: "3.15"
       - name: Install (from the lockfile)
         run: uv sync --locked
       - name: Lint
