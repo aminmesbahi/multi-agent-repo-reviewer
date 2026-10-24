@@ -1,0 +1,6 @@
+# runtime
+pydantic==2.9.2
+requests
+
+# test
+pytest==8.3.3

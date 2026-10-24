@@ -1,0 +1,37 @@
+# LiteLLM Proxy only. Ollama is intentionally NOT a service here: it runs on the host so it
+# can use your GPU on every OS (Docker Desktop on macOS cannot pass a GPU through).
+#
+#   cp .env.example .env   # then edit LITELLM_MASTER_KEY
+#   docker compose up -d
+#
+# The proxy is published on 127.0.0.1 only. Do not change that to 0.0.0.0 unless you have put
+# your own authentication and TLS in front of it.
+
+services:
+  litellm:
+    image: ${LITELLM_IMAGE:-docker.litellm.ai/berriai/litellm:main-stable}
+    command: ["--config", "/app/config.yaml", "--port", "4000"]
+    ports:
+      - "127.0.0.1:4000:4000"
+    volumes:
+      - ./config/litellm.yaml:/app/config.yaml:ro
+    environment:
+      LITELLM_MASTER_KEY: ${LITELLM_MASTER_KEY:?Set LITELLM_MASTER_KEY in .env (see .env.example)}
+      OLLAMA_API_BASE: ${OLLAMA_API_BASE:-http://host.docker.internal:11434}
+      DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY:-}
+      # Do not fetch the model price map from GitHub on startup.
+      LITELLM_LOCAL_MODEL_COST_MAP: "True"
+    extra_hosts:
+      # Makes host.docker.internal resolve on Linux too (Docker Desktop provides it already).
+      - "host.docker.internal:host-gateway"
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://127.0.0.1:4000/health/liveliness', timeout=3)"
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 20s
+    restart: unless-stopped

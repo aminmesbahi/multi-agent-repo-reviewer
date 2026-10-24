@@ -1,0 +1,15 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "shelf-tracker"
+version = "0.2.0"
+description = "A tiny synthetic inventory tracker used as a review fixture."
+requires-python = ">=3.11"
+dependencies = [
+    "pydantic==2.9.2",
+]
+
+[project.scripts]
+shelf-tracker = "shelf_tracker.cli:main"

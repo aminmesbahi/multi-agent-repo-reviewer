@@ -1,0 +1,48 @@
+[build-system]
+requires = ["hatchling>=1.25"]
+build-backend = "hatchling.build"
+
+[project]
+name = "multi-agent-repo-reviewer"
+version = "0.1.0"
+description = "Self-hostable, read-only multi-agent Python repository reviewer (LangGraph + LiteLLM Proxy + Ollama)."
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.12"
+dependencies = [
+    "langgraph>=1.2,<2",
+    "openai>=3,<4",
+    "httpx>=0.28,<1",
+    "pydantic>=2.11,<3",
+    "typer>=0.27,<1",
+]
+
+[project.optional-dependencies]
+# Only needed if you run the LiteLLM Proxy outside Docker (see README).
+gateway = ["litellm[proxy]>=1.106"]
+
+[dependency-groups]
+dev = ["pytest>=9", "ruff>=0.17"]
+
+[project.scripts]
+repo-reviewer = "repo_reviewer.cli:app"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/repo_reviewer"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+markers = ["live: needs a running LiteLLM Proxy and model (deselected by default)"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+extend-exclude = ["sample_project"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "SIM", "S"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S101", "S105", "S106"]
+"scripts/**" = ["S101"]

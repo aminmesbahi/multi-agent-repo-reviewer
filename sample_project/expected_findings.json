@@ -1,0 +1,25 @@
+{
+  "description": "Defects intentionally planted in this synthetic project. Used by tests/test_e2e_mock.py.",
+  "expected": [
+    {
+      "id": "io-without-exception-handling",
+      "agent": "code",
+      "file": "src/shelf_tracker/storage.py",
+      "line": 7,
+      "title_contains": "exception handling"
+    },
+    {
+      "id": "unpinned-dependency",
+      "agent": "dependencies",
+      "file": "requirements.txt",
+      "line": 3,
+      "title_contains": "requests"
+    },
+    {
+      "id": "incomplete-readme",
+      "agent": "documentation",
+      "file": "README.md",
+      "title_contains": "installation"
+    }
+  ]
+}

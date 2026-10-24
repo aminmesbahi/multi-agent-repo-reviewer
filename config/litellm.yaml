@@ -1,0 +1,45 @@
+# LiteLLM Proxy configuration (database-free).
+#
+# Every real model call from repo_reviewer goes through the aliases below. The alias is the
+# routing decision: choosing --mode local or --mode deepseek picks the alias, and the proxy never
+# switches between them on its own. There is deliberately NO `fallbacks:` / `router_settings`
+# section, so a failing local model returns an error instead of silently using a cloud provider.
+
+model_list:
+  # --- local inference (Ollama running on the HOST, see README "Ollama on the host") ---------
+  - model_name: reviewer-local
+    litellm_params:
+      # Must be a model that supports tool calling. Check with `ollama show <model>`
+      # (Capabilities should list "tools"). Change this line if you pulled a different model.
+      model: ollama_chat/qwen3:8b
+      api_base: os.environ/OLLAMA_API_BASE
+      timeout: 120
+
+  # --- optional cloud inference (only used when you run with --mode deepseek) ----------------
+  - model_name: reviewer-deepseek
+    litellm_params:
+      model: deepseek/deepseek-chat
+      api_key: os.environ/DEEPSEEK_API_KEY
+      timeout: 120
+
+  # --- EXPERIMENTAL: decision model for `--router decision` ---------------------------------
+  # Disabled by default. The Decisions routes (/v1/systemone, /v1/decisions) exist in LiteLLM
+  # >= 1.104.2, but no decision model has been verified end-to-end with this repository.
+  # Uncomment after reading docs/routing.md. vLLM is self-hosted, so request text stays on your
+  # machine. NOTE: an Ollama generative model (reviewer-local) cannot serve these routes: LiteLLM
+  # 1.106.3 answers HTTP 400 "Unknown Decisions provider ollama_chat" (observed, see docs).
+  #
+  # - model_name: router-decision
+  #   litellm_params:
+  #     model: hosted_vllm/Qwen/Qwen3-0.6B   # example from the LiteLLM docs, not verified here
+  #     api_base: os.environ/HOSTED_VLLM_API_BASE
+
+general_settings:
+  master_key: os.environ/LITELLM_MASTER_KEY
+  # No database_url: virtual keys, budgets, spend logs, teams and the Admin UI are unavailable
+  # in this configuration. Authentication is the single master key above.
+
+litellm_settings:
+  num_retries: 0 # retries are handled by the client (REVIEWER_MAX_RETRIES), not hidden here
+  request_timeout: 120
+  drop_params: false
