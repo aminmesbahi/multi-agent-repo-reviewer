@@ -228,3 +228,41 @@ def test_directory_is_not_readable_as_a_file(repo):
         Sandbox(repo, Limits()).read_lines("app")
     with pytest.raises(ToolError):
         Sandbox(repo, Limits()).read_lines(".")
+
+
+def test_posix_directory_descriptor_is_rejected_before_fdopen(repo, monkeypatch):
+    """On POSIX, open(dir, O_RDONLY) succeeds and fdopen() raises IsADirectoryError.
+
+    Windows cannot produce that situation, so simulate it: the type check must run on the raw
+    descriptor, and the descriptor must be closed on the way out.
+    """
+    import stat as stat_module
+
+    real_open, real_fstat, real_close = os.open, os.fstat, os.close
+    opened: list[int] = []
+    closed: list[int] = []
+
+    def fake_open(path, flags, *args, **kwargs):
+        fd = real_open(path, flags, *args, **kwargs)
+        opened.append(fd)
+        return fd
+
+    def fake_fstat(fd):
+        info = real_fstat(fd)
+        return os.stat_result((stat_module.S_IFDIR | 0o755, *tuple(info)[1:]))
+
+    def fake_close(fd):
+        closed.append(fd)
+        real_close(fd)
+
+    def fail_fdopen(*args, **kwargs):
+        raise IsADirectoryError("fdopen must not be reached for a directory")
+
+    monkeypatch.setattr(os, "open", fake_open)
+    monkeypatch.setattr(os, "fstat", fake_fstat)
+    monkeypatch.setattr(os, "close", fake_close)
+    monkeypatch.setattr(os, "fdopen", fail_fdopen)
+
+    with pytest.raises(ToolError, match="not a regular file"):
+        Sandbox(repo, Limits()).read_lines("README.md")
+    assert opened and closed == opened

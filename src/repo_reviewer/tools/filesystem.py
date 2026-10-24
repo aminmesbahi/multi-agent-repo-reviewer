@@ -193,14 +193,20 @@ class Sandbox:
             fd = os.open(path, flags)
         except OSError as exc:
             raise ToolError(f"cannot open {norm}") from exc
-        with os.fdopen(fd, "rb") as handle:
-            info = os.fstat(handle.fileno())
+        try:
+            # Check the type on the descriptor before wrapping it: on POSIX, opening a directory
+            # read-only succeeds and fdopen() would then raise IsADirectoryError.
+            info = os.fstat(fd)
             if not stat.S_ISREG(info.st_mode):
                 raise ToolError(f"not a regular file: {norm}")
             if info.st_size > self.limits.max_file_bytes:
                 raise LimitExceeded(
                     f"{norm} is {info.st_size} bytes; limit is {self.limits.max_file_bytes}"
                 )
+        except BaseException:
+            os.close(fd)
+            raise
+        with os.fdopen(fd, "rb") as handle:
             data = handle.read(self.limits.max_file_bytes + 1)
         if len(data) > self.limits.max_file_bytes:
             raise LimitExceeded(f"{norm} exceeds {self.limits.max_file_bytes} bytes")

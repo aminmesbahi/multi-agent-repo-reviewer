@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import re
+
 import pytest
 from conftest import SAMPLE, make_repo
 from typer.testing import CliRunner
@@ -108,8 +110,10 @@ def test_smoke_refuses_mock_mode():
 
 def test_help_lists_documented_options():
     result = runner.invoke(app, ["review", "--help"])
+    # CI (GitHub Actions) makes Typer's Rich help emit ANSI colour codes, which can split a flag.
+    plain = re.sub(r"\x1b\[[0-9;]*m", "", result.stdout)
     for flag in ("--agents", "--mode", "--output", "--json", "--verbose", "--router", "--request"):
-        assert flag in result.stdout
+        assert flag in plain
 
 
 # -- routing options ------------------------------------------------------------------------
